@@ -1,0 +1,12 @@
+
+builds:
+  - binary: issuer
+    goos:
+      - linux
+    goarch:
+      - amd64  
+before:
+    hooks:
+        - go-bindata bash/
+
+
