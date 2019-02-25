@@ -1,23 +1,33 @@
 package main
 
 import (
-	"github.com/progrium/go-basher"
-	"net/http"
-	"strings"
-	"path"
-	"os"
-	"log"
-	"io/ioutil"
 	"flag"
+	"fmt"
+	"github.com/progrium/go-basher"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
+	"path"
+	"strconv"
+	"strings"
+	"time"
 )
 
 var bash, _ = basher.NewContext("/bin/bash", false)
 var keyDir = "/data/"
 
+func source(script string) {
+	err := bash.Source("bash/"+script, Asset)
+	if err != nil {
+		panic(err)
+	}
+}
 func init() {
-	bash.Source("bash/keytab.sh", Asset)
-	bash.Source("bash/root.sh", Asset)
-	bash.Source("bash/issue.sh", Asset)
+	source("keytab.sh")
+	source("root.sh")
+	source("issue.sh")
+	source("check.sh")
 }
 
 func checkTrustFile() (string) {
@@ -80,10 +90,28 @@ func keytabGenerator(w http.ResponseWriter, r *http.Request) {
 	w.Write(content)
 }
 
+//wait until kds is available
+func waitForKdc() {
+	for {
+		resp, err := bash.Run("check", []string{keyDir})
+		if err != nil || resp != 0 {
+			if resp != 0 {
+				fmt.Println("KDC is not yet available.  Shell return code is " + strconv.Itoa(resp))
+			} else {
+				fmt.Println("KDC is not yet available " + err.Error())
+			}
+			time.Sleep(1 * time.Second)
+		} else {
+			return
+		}
+	}
+}
+
 func main() {
 	port := flag.String("port", "8081", "Http port to listen on")
 	flag.Parse()
 
+	waitForKdc()
 	http.HandleFunc("/keystore/", certGenerator)
 	http.HandleFunc("/truststore", trustStoreGenerator)
 	http.HandleFunc("/keytab/", keytabGenerator)
