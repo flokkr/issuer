@@ -7,6 +7,6 @@ builds:
       - amd64  
 before:
     hooks:
-        - go-bindata bash/
+        - go-bindata -o bindata.go bash/...
 
 
