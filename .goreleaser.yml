@@ -4,7 +4,11 @@ builds:
     goos:
       - linux
     goarch:
-      - amd64  
+      - amd64
+    env:
+      - CGO_ENABLED=0
+      - GOOS=linux
+      - GOARCH=amd64
 before:
     hooks:
         - go-bindata -o bindata.go bash/...
